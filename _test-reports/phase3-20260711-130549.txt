@@ -1,0 +1,30 @@
+SUPERAGENT SENTINEL - PHASE 3 TEST REPORT
+Started:  2026-07-11T13:05:49.3904574+06:00
+Finished: 2026-07-11T13:06:01.0364948+06:00
+API:      http://127.0.0.1:8000
+Frontend: http://127.0.0.1:8080
+Passed:   18
+Failed:   4
+
+PASS  | Phase 3 source structure                         |      19 ms | 
+PASS  | Docker Phase 3 services running                  |     924 ms | 
+PASS  | Phase 3 health and dependency contract           |      83 ms | 
+PASS  | Evaluation API contract                          |      43 ms | 
+PASS  | Dataset file hashes match manifest               |      67 ms | 
+PASS  | CSV row counts and schema                        |     968 ms | 
+PASS  | Provider boundary invariants                     |    1332 ms | 
+FAIL  | Shared cash accounting invariants                |     263 ms | Shared cash equation failed for AGT-SYL-001
+PASS  | Time-ordered split and leakage guard             |     813 ms | 
+PASS  | Positive labels exist in evaluation split        |    1517 ms | test positives: shortage=444 anomaly=266 quality=33
+PASS  | Forecast metrics consistency                     |      18 ms | 
+PASS  | Classification metric formulas                   |      29 ms | 
+PASS  | Phase 3 headline metrics threshold               |      25 ms | MAPE=10.01% shortage_recall=76.13% anomaly_F1=90.94%
+FAIL  | Synthetic data reproducibility                   |     144 ms | .\.venv\Scripts\python.exe C:\Users\LENOVO\AppData\Local\Temp\superagent-phase3-repro-a87a9dcee66a456fb99ecfeae0a38840\repro_check.py C:\Users\LENOVO\AppData\Local\Temp\superagent-phase3-repro-a87a9dcee66a456fb99ecfeae0a38840 failed with exit code 1
+FAIL  | Evaluation report artifacts are readable         |      39 ms | Markdown report lacks limitations
+PASS  | Phase 2 API regression                           |    1311 ms | 
+PASS  | Backend automated tests                          |    1923 ms | 
+PASS  | Frontend typecheck and production build          |    1501 ms | 
+FAIL  | Frontend evaluation metrics panel                |      22 ms | Frontend does not call evaluation report API
+PASS  | Docker image and Compose validation              |     261 ms | 
+PASS  | Runtime logs have no fatal errors                |     173 ms | 
+PASS  | Secrets and generated test reports policy        |      76 ms | 

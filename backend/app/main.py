@@ -12,7 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.db import SessionLocal, get_session, init_db
+from app.db import SessionLocal, engine, get_session, init_db
 from app.evaluation.router import router as evaluation_router
 from app.logging_config import configure_logging
 from app.middleware import RequestContextMiddleware
@@ -41,11 +41,25 @@ from app.schemas import (
     TransitionCommand,
     WorkflowAction,
 )
+from app.tracing import (
+    configure_tracing,
+    force_flush_tracing,
+    instrument_fastapi,
+)
 from app.workflow import WorkflowError
 
 configure_logging()
 logger = logging.getLogger("superagent.api")
 settings = get_settings()
+configure_tracing(
+    service_name=settings.otel_service_name,
+    service_version="0.3.0",
+    environment=settings.app_env,
+    endpoint=settings.otel_exporter_otlp_traces_endpoint,
+    sample_ratio=settings.otel_trace_sample_ratio,
+    enabled=settings.otel_tracing_enabled,
+    engine=engine,
+)
 
 
 @asynccontextmanager
@@ -55,8 +69,11 @@ async def lifespan(app: FastAPI):
     await redis.ping()
     app.state.redis = redis
     app.state.jobs = RedisJobStore(redis)
-    yield
-    await redis.aclose()
+    try:
+        yield
+    finally:
+        await redis.aclose()
+        force_flush_tracing()
 
 
 app = FastAPI(
@@ -73,8 +90,9 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Accept", "Content-Type", "X-Request-ID"],
-    expose_headers=["X-Request-ID", "Server-Timing"],
+    expose_headers=["X-Request-ID", "X-Trace-ID", "Server-Timing"],
 )
+instrument_fastapi(app)
 
 
 def jobs(request: Request) -> RedisJobStore:
@@ -163,9 +181,13 @@ async def dashboard(
 )
 async def create_analysis(
     payload: AnalysisRequest,
+    request: Request,
     store: RedisJobStore = Depends(jobs),
 ) -> AnalysisAccepted:
-    analysis_id = await store.create_and_enqueue(payload)
+    analysis_id = await store.create_and_enqueue(
+        payload,
+        request_id=request.state.request_id,
+    )
     return AnalysisAccepted(analysis_id=analysis_id, status=JobStatus.queued)
 
 

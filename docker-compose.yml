@@ -32,8 +32,17 @@ services:
       retries: 30
     restart: unless-stopped
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:${JAEGER_UI_PORT:-16686}:16686"
+      - "127.0.0.1:${OTLP_HTTP_HOST_PORT:-4318}:4318"
+    restart: unless-stopped
+
   backend:
-    image: superagent-sentinel-backend:phase3
+    image: superagent-sentinel-backend:phase3-observability
     build:
       context: ./backend
     environment:
@@ -43,6 +52,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: http://localhost:${FRONTEND_HOST_PORT:-8080},http://127.0.0.1:${FRONTEND_HOST_PORT:-8080}
       ANALYSIS_STAGE_DELAY_MS: "100"
+      OTEL_TRACING_ENABLED: "true"
+      OTEL_SERVICE_NAME: superagent-api
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4318/v1/traces
+      OTEL_TRACE_SAMPLE_RATIO: "1.0"
     volumes:
       - ./data:/app/data:ro
       - ./artifacts:/app/artifacts:ro
@@ -51,6 +64,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     ports:
       - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"
     healthcheck:
@@ -62,7 +77,7 @@ services:
     restart: unless-stopped
 
   worker:
-    image: superagent-sentinel-backend:phase3
+    image: superagent-sentinel-backend:phase3-observability
     command: ["python", "-m", "app.worker"]
     environment:
       APP_ENV: production
@@ -70,11 +85,17 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-superagent}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-superagent}
       REDIS_URL: redis://redis:6379/0
       ANALYSIS_STAGE_DELAY_MS: "100"
+      OTEL_TRACING_ENABLED: "true"
+      OTEL_SERVICE_NAME: superagent-worker
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4318/v1/traces
+      OTEL_TRACE_SAMPLE_RATIO: "1.0"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     restart: unless-stopped
 
   frontend:

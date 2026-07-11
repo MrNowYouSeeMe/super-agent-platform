@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_model: str | None = None
 
+    otel_tracing_enabled: bool = True
+    otel_service_name: str = "superagent-api"
+    otel_exporter_otlp_traces_endpoint: str = (
+        "http://127.0.0.1:4318/v1/traces"
+    )
+    otel_trace_sample_ratio: float = Field(default=1.0, ge=0.0, le=1.0)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
