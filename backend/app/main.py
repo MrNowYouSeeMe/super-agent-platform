@@ -53,8 +53,10 @@ from app.workflow import WorkflowError
 configure_logging()
 logger = logging.getLogger("superagent.api")
 settings = get_settings()
+ANALYSIS_NOT_FOUND_DETAIL = "Analysis was not found."
+
 ANALYSIS_NOT_FOUND_RESPONSES = {
-    404: {"description": "Analysis was not found."},
+    404: {"description": ANALYSIS_NOT_FOUND_DETAIL},
 }
 ALERT_NOT_FOUND_RESPONSES = {
     404: {"description": "Alert was not found."},
@@ -214,7 +216,7 @@ async def get_analysis(
 ) -> AnalysisSnapshot:
     snapshot = await store.get_snapshot(analysis_id)
     if snapshot is None:
-        raise HTTPException(status_code=404, detail="Analysis was not found.")
+        raise HTTPException(status_code=404, detail=ANALYSIS_NOT_FOUND_DETAIL)
     return snapshot
 
 
@@ -258,44 +260,6 @@ async def _analysis_event_stream(
         await asyncio.sleep(0.2)
 
 
-def _stream_is_complete(
-    snapshot: AnalysisSnapshot,
-    emitted: int,
-) -> bool:
-    return (
-        snapshot.status in {JobStatus.completed, JobStatus.failed}
-        and emitted >= len(snapshot.events)
-    )
-
-
-async def _analysis_event_stream(
-    analysis_id: str,
-    request: Request,
-    store: RedisJobStore,
-) -> AsyncIterator[str]:
-    emitted = 0
-
-    while not await request.is_disconnected():
-        snapshot = await store.get_snapshot(analysis_id)
-
-        if snapshot is None:
-            return
-
-        for event in snapshot.events[emitted:]:
-            yield (
-                "data: "
-                + json.dumps(
-                    event.model_dump(mode="json"),
-                    ensure_ascii=False,
-                )
-                + "\n\n"
-            )
-            emitted += 1
-
-        if _stream_is_complete(snapshot, emitted):
-            return
-
-        await asyncio.sleep(0.2)
 
 
 @app.get(
@@ -310,7 +274,7 @@ async def stream_events(
     if await store.get_snapshot(analysis_id) is None:
         raise HTTPException(
             status_code=404,
-            detail="Analysis was not found.",
+            detail=ANALYSIS_NOT_FOUND_DETAIL,
         )
 
     return StreamingResponse(

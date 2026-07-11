@@ -14,6 +14,8 @@ Set-Location $Backend
 Set-Location $Frontend
 npm.cmd install --global npm@11.6.4
 npm.cmd ci
+
+npm.cmd run test:coverage
 npm.cmd run build
 npm.cmd audit --audit-level=high
 

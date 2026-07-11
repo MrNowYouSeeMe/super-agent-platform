@@ -84,6 +84,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Run frontend tests with coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
       - name: Typecheck and production build
         working-directory: frontend
         run: npm run build
@@ -91,6 +95,14 @@ jobs:
       - name: Dependency vulnerability audit
         working-directory: frontend
         run: npm audit --audit-level=high
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 7
 
   containers:
     name: Compose and Docker Build
@@ -136,6 +148,12 @@ jobs:
         with:
           name: python-coverage
           path: backend
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
 
       - name: SonarQube scan and Quality Gate
         uses: SonarSource/sonarqube-scan-action@v8.2.0

@@ -24,3 +24,5 @@ _test-reports/
 .scannerwork/
 backend/coverage.xml
 .sonar-local-token
+backend/.coverage
+frontend/coverage/

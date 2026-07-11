@@ -93,8 +93,8 @@ export default function App() {
   }
 
   function beginPolling(analysisId: string) {
-    void poll(analysisId).catch(errorValue => {
-      stopAnalysisWithError(errorValue);
+    void poll(analysisId).catch(error_ => {
+      stopAnalysisWithError(error_);
     });
   }
 
@@ -128,8 +128,8 @@ export default function App() {
         handleEvent,
         handleStreamFailure,
       );
-    } catch (errorValue) {
-      stopAnalysisWithError(errorValue, "Analysis failed.");
+    } catch (error_) {
+      stopAnalysisWithError(error_, "Analysis failed.");
     }
   }
 

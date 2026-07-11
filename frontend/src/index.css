@@ -6,7 +6,7 @@ button, select { font: inherit; }
 .card, .panel { border: 1px solid rgb(30 41 59); background: rgb(15 23 42 / .72); border-radius: 1rem; padding: 1.25rem; }
 .control { border: 1px solid rgb(51 65 85); background: rgb(15 23 42); border-radius: .75rem; padding: .75rem 1rem; outline: none; }
 .primary { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border: 0; border-radius: .75rem; padding: .75rem 1rem; background: rgb(34 211 238); color: rgb(2 6 23); font-weight: 700; cursor: pointer; }
-.primary:disabled { opacity: .55; cursor: not-allowed; }
+.primary:disabled { background: rgb(103 232 249); color: rgb(15 23 42); cursor: not-allowed; }
 .icon { border: 1px solid rgb(51 65 85); border-radius: .75rem; padding: .65rem; background: rgb(15 23 42); cursor: pointer; }
 .pill { border: 1px solid rgb(34 211 238 / .25); background: rgb(34 211 238 / .08); color: rgb(165 243 252); border-radius: 999px; padding: .3rem .65rem; font-size: .72rem; font-weight: 700; }
 .empty { border: 1px dashed rgb(51 65 85); border-radius: .75rem; padding: 1.5rem; text-align: center; color: rgb(148 163 184); }

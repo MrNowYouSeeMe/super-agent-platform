@@ -77,10 +77,7 @@ class RedisJobStore:
     async def pop_job(self, timeout: float = 5) -> str | None:
         try:
             async with asyncio.timeout(timeout):
-                item = await self.redis.brpop(
-                    settings.analysis_queue,
-                    timeout=0,
-                )
+                item = await self.redis.brpop(settings.analysis_queue)
         except TimeoutError:
             return None
 
