@@ -18,3 +18,5 @@ _backup/
 .idea/
 .DS_Store
 Thumbs.db
+postgres-data/
+redis-data/

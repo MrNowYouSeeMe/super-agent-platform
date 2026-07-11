@@ -1,18 +1,88 @@
+name: superagent-phase2
+
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-superagent}
+      POSTGRES_USER: ${POSTGRES_USER:-superagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-superagent} -d ${POSTGRES_DB:-superagent}"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_HOST_PORT:-56379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
   backend:
-    build: ./backend
+    image: superagent-sentinel-backend:phase2
+    build:
+      context: ./backend
     environment:
       APP_ENV: production
-      ANALYSIS_STAGE_DELAY_MS: "180"
-      CORS_ORIGINS: http://localhost:8080
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-superagent}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-superagent}
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:${FRONTEND_HOST_PORT:-8080},http://127.0.0.1:${FRONTEND_HOST_PORT:-8080}
+      ANALYSIS_STAGE_DELAY_MS: "100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json,urllib.request; d=json.load(urllib.request.urlopen('http://127.0.0.1:8000/health')); assert d['status']=='ok' and d['version']=='0.2.0'"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 5s
+    restart: unless-stopped
+
+  worker:
+    image: superagent-sentinel-backend:phase2
+    command: ["python", "-m", "app.worker"]
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-superagent}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-superagent}
+      REDIS_URL: redis://redis:6379/0
+      ANALYSIS_STAGE_DELAY_MS: "100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    image: superagent-sentinel-frontend:phase2
+    build:
+      context: ./frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
-      - "8080:80"
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-8080}:80"
     restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
