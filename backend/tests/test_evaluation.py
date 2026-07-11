@@ -1,3 +1,4 @@
+import csv
 from pathlib import Path
 
 from app.evaluation.metrics import evaluate_dataset
@@ -41,3 +42,38 @@ def test_evaluation_produces_measured_metrics(tmp_path: Path) -> None:
     assert report["safe_language_coverage"] == 1.0
     assert (report_dir / "latest_metrics.json").exists()
     assert (report_dir / "latest_report.md").exists()
+
+
+def test_shared_cash_accounting_and_report_limitations(tmp_path: Path) -> None:
+    data_dir = tmp_path / "data"
+    report_dir = tmp_path / "reports"
+
+    generate_dataset(
+        data_dir,
+        SyntheticConfig(agents=3, days=8, seed=7788),
+    )
+    evaluate_dataset(data_dir, report_dir)
+
+    with (data_dir / "agent_hourly.csv").open(
+        "r",
+        newline="",
+        encoding="utf-8",
+    ) as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows
+    assert any(float(row["net_cash_change_bdt"]) < 0 for row in rows)
+
+    for row in rows:
+        expected = (
+            float(row["shared_cash_before_bdt"])
+            + float(row["net_cash_change_bdt"])
+            + float(row["authorized_cash_support_bdt"])
+        )
+        actual = float(row["shared_cash_after_bdt"])
+        assert abs(expected - actual) <= 10
+
+    markdown = (report_dir / "latest_report.md").read_text(
+        encoding="utf-8",
+    )
+    assert "## Limitations" in markdown

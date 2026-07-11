@@ -30,6 +30,10 @@ def _round_money(value: float) -> int:
     return max(0, int(round(value / 10.0) * 10))
 
 
+def _round_signed_money(value: float) -> int:
+    return int(round(value / 10.0) * 10)
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -241,7 +245,7 @@ def generate_dataset(output_dir: Path, config: SyntheticConfig | None = None) ->
                     "shared_cash_safe_threshold_bdt": shared_threshold,
                     "total_cash_in_bdt": _round_money(total_cash_in),
                     "total_cash_out_bdt": _round_money(total_cash_out),
-                    "net_cash_change_bdt": _round_money(net_cash_change),
+                    "net_cash_change_bdt": _round_signed_money(net_cash_change),
                     "authorized_cash_support_bdt": authorized_cash_support,
                     "event_context": "+".join(context_parts),
                     "ground_truth_shortage_within_6h": 0,

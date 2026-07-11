@@ -314,5 +314,14 @@ def evaluate_dataset(data_dir: Path, output_dir: Path) -> dict[str, Any]:
         ]
     )
 
+    md.extend(
+        [
+            "## Limitations",
+            "",
+            *[f"- {item}" for item in report["limitations"]],
+            "",
+        ]
+    )
+
     md_path.write_text("\n".join(md), encoding="utf-8")
     return report

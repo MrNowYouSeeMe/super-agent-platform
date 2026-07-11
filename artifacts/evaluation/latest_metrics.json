@@ -1,43 +1,43 @@
 {
   "report_version": "phase3-evaluation-v1",
-  "generated_at": "2026-07-11T06:47:11.182377+00:00",
+  "generated_at": "2026-07-11T08:09:17.232428+00:00",
   "dataset_version": "phase3-synthetic-v1",
   "seed": 20260711,
   "split_strategy": "time_ordered_70_train_15_validation_15_test",
-  "champion_forecast_model": "moving_average_6h",
+  "champion_forecast_model": "ewma_net_change",
   "forecast_candidates": [
     {
       "model": "seasonal_naive_24h",
-      "mae_bdt": 8496.79,
-      "rmse_bdt": 29145.75,
-      "mape_percent": 10.08,
+      "mae_bdt": 10179.63,
+      "rmse_bdt": 31298.28,
+      "mape_percent": 11.85,
       "evaluated_rows": 1350
     },
     {
       "model": "moving_average_6h",
-      "mae_bdt": 8480.81,
-      "rmse_bdt": 29136.73,
-      "mape_percent": 10.01,
+      "mae_bdt": 8681.48,
+      "rmse_bdt": 29074.42,
+      "mape_percent": 12.24,
       "evaluated_rows": 1350
     },
     {
       "model": "ewma_net_change",
-      "mae_bdt": 8482.95,
-      "rmse_bdt": 29144.0,
-      "mape_percent": 10.02,
+      "mae_bdt": 8445.92,
+      "rmse_bdt": 29058.55,
+      "mape_percent": 11.13,
       "evaluated_rows": 1350
     }
   ],
   "shortage_detection": {
-    "precision": 0.9185,
-    "recall": 0.7613,
-    "f1": 0.8325,
-    "false_positive_rate": 0.0325,
-    "true_positive": 338,
-    "false_positive": 30,
-    "true_negative": 894,
-    "false_negative": 106,
-    "mean_lead_time_minutes": 64.26,
+    "precision": 0.9025,
+    "recall": 0.8131,
+    "f1": 0.8555,
+    "false_positive_rate": 0.0422,
+    "true_positive": 361,
+    "false_positive": 39,
+    "true_negative": 885,
+    "false_negative": 83,
+    "mean_lead_time_minutes": 65.48,
     "median_lead_time_minutes": 60.0
   },
   "anomaly_detection": {
@@ -62,7 +62,7 @@
   },
   "explanation_coverage": 1.0,
   "safe_language_coverage": 1.0,
-  "evaluation_runtime_ms": 145.88,
+  "evaluation_runtime_ms": 153.4,
   "measured_metrics_count": 16,
   "notes": [
     "Champion selection uses lowest test-set MAE among deterministic baselines.",

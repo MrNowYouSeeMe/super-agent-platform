@@ -1,7 +1,7 @@
 {
   "dataset_version": "phase3-synthetic-v1",
   "seed": 20260711,
-  "generated_at": "2026-07-11T06:47:10.987248+00:00",
+  "generated_at": "2026-07-11T08:09:17.025559+00:00",
   "agents": 18,
   "providers": [
     "bKash",
@@ -28,7 +28,7 @@
     {
       "path": "data/synthetic/agent_hourly.csv",
       "rows": 9072,
-      "sha256": "8c0c23516ab942f7d27478706c2dd9a69d35bdcc6cb6924e254d9019615fbc0f"
+      "sha256": "e59407965ffbcfa5234928d4182fc276120e6b64879d575d299f3ba47ecf255a"
     },
     {
       "path": "data/synthetic/provider_hourly.csv",
