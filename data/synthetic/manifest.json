@@ -1,0 +1,51 @@
+{
+  "dataset_version": "phase3-synthetic-v1",
+  "seed": 20260711,
+  "generated_at": "2026-07-11T06:47:10.987248+00:00",
+  "agents": 18,
+  "providers": [
+    "bKash",
+    "Nagad",
+    "Rocket"
+  ],
+  "areas": [
+    "Zindabazar",
+    "Amberkhana",
+    "Mirabazar",
+    "Subidbazar",
+    "Shibgonj",
+    "Uposhohor"
+  ],
+  "start_at": "2026-05-01T00:00:00+00:00",
+  "end_at": "2026-05-21T23:00:00+00:00",
+  "interval_minutes": 60,
+  "agent_rows": 9072,
+  "provider_rows": 27216,
+  "shortage_positive_rows": 3400,
+  "anomaly_positive_rows": 1726,
+  "data_quality_positive_rows": 427,
+  "files": [
+    {
+      "path": "data/synthetic/agent_hourly.csv",
+      "rows": 9072,
+      "sha256": "8c0c23516ab942f7d27478706c2dd9a69d35bdcc6cb6924e254d9019615fbc0f"
+    },
+    {
+      "path": "data/synthetic/provider_hourly.csv",
+      "rows": 27216,
+      "sha256": "9a9d06054ace266f101a0d48cb50a46bf2eac0376c8d4cfd39f0734e2469efca"
+    }
+  ],
+  "assumptions": [
+    "One shared physical-cash pool is modelled per outlet.",
+    "Provider e-money balances remain separate and are never converted across providers.",
+    "Cash-in increases physical cash and consumes the selected provider's e-money.",
+    "Cash-out decreases physical cash and replenishes the selected provider's e-money.",
+    "All names, balances, events and labels are synthetic and reproducible from the seed."
+  ],
+  "limitations": [
+    "Synthetic behaviour cannot prove production accuracy on real provider traffic.",
+    "Injected events are simplified and may be easier to detect than real-world anomalies.",
+    "Regulatory, settlement and real-provider integration are outside this prototype."
+  ]
+}

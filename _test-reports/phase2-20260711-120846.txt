@@ -1,0 +1,38 @@
+SUPERAGENT SENTINEL - PHASE 2 TEST REPORT
+Started:  2026-07-11T12:08:46.2119845+06:00
+Finished: 2026-07-11T12:09:11.9464231+06:00
+API:      http://127.0.0.1:8000
+Frontend: http://127.0.0.1:8080
+Passed:   30
+Failed:   0
+
+PASS  | Project structure and Phase 2 source          |      12 ms | 
+PASS  | Docker engine                                 |     216 ms | Docker 29.1.3
+PASS  | Docker Compose configuration                  |     102 ms | 
+PASS  | All five Phase 2 services running             |     878 ms | 
+PASS  | PostgreSQL direct readiness                   |     220 ms | 
+PASS  | Redis direct readiness                        |     238 ms | 
+PASS  | API health and dependency contract            |      55 ms | 
+PASS  | Frontend and reverse proxy                    |      15 ms | 
+PASS  | API docs and OpenAPI route contract           |      81 ms | 
+PASS  | Dashboard and provider boundary contract      |      13 ms | 
+PASS  | Security and observability headers            |      23 ms | 
+PASS  | CORS preflight policy                         |       6 ms | 
+PASS  | Invalid request validation                    |      26 ms | 
+PASS  | Unknown resource protection                   |       8 ms | 
+PASS  | Full scenario and language matrix             |   11411 ms | 
+PASS  | Truthful SSE execution timeline               |       6 ms | 
+PASS  | Persistent alert list and status filter       |      27 ms | 
+PASS  | Happy-path case workflow and audit trail      |      57 ms | 
+PASS  | Illegal transition and optimistic locking     |      54 ms | 
+PASS  | Resolve remaining test alerts cleanly         |     182 ms | 
+PASS  | Dashboard counters return to baseline         |       6 ms | 
+PASS  | Concurrent Redis queue processing             |    5669 ms | 
+PASS  | Redis queue drained and jobs persisted        |     402 ms | Redis keys=66
+PASS  | PostgreSQL alert and audit persistence        |     388 ms | alerts=15 case_events=66
+PASS  | Persistence survives backend restart          |    2000 ms | 
+PASS  | Backend automated tests                       |    1754 ms | 
+PASS  | Frontend typecheck and production build       |    1413 ms | 
+PASS  | Secrets excluded from Git                     |      74 ms | 
+PASS  | API latency smoke benchmark                   |      92 ms | health avg/max=3.27/3.68ms; dashboard avg/max=4.44/6.94ms
+PASS  | No fatal runtime errors in test-window logs   |     158 ms | 

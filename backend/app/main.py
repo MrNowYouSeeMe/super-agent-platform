@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.db import SessionLocal, get_session, init_db
+from app.evaluation.router import router as evaluation_router
 from app.logging_config import configure_logging
 from app.middleware import RequestContextMiddleware
 from app.redis_jobs import RedisJobStore
@@ -60,10 +61,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.2.0",
-    description="Redis-worker and PostgreSQL workflow edition.",
+    version="0.3.0",
+    description="Synthetic-data evaluation and measured analytics edition.",
     lifespan=lifespan,
 )
+app.include_router(evaluation_router)
 app.add_middleware(RequestContextMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -97,7 +99,7 @@ async def health(request: Request) -> HealthResponse:
     return HealthResponse(
         status=overall,
         service=settings.app_name,
-        version="0.2.0",
+        version="0.3.0",
         environment=settings.app_env,
         dependencies=DependencyHealth(
             postgres=postgres_status,

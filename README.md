@@ -1,25 +1,44 @@
 # SuperAgent Sentinel
 
-Phase 2 adds a Redis-backed worker pipeline and PostgreSQL-persistent alert/case workflow to the Phase 1 contract-safe vertical slice.
+Phase 3 adds a reproducible synthetic multi-provider dataset, ground-truth labels, deterministic baseline evaluation, measured judge-facing metrics and an evaluation panel without changing the Phase 2 alert/workflow contracts.
 
-## Implemented
+## Current architecture
 
-- Separate API and analysis worker processes
-- Redis queue and persistent analysis events
-- PostgreSQL alerts and case events
-- Legal workflow state transitions
-- Assign, acknowledge, review, escalate, and resolve actions
-- Optimistic workflow version checks
-- Responsive workflow UI
-- Health checks for API, PostgreSQL, and Redis
-- Safe analytics and multilingual output from Phase 1
+- React + Vite + TypeScript frontend
+- FastAPI contract-safe API
+- Redis analysis queue and persistent execution events
+- Separate background worker
+- PostgreSQL alerts, case state and audit history
+- Docker Compose full stack
+- Synthetic data and evaluation artifacts mounted read-only into the API container
 
-## Local services
+## Phase 3 deliverables
 
-- Frontend: http://127.0.0.1:5173
-- API: http://127.0.0.1:8000
-- API docs: http://127.0.0.1:8000/docs
-- PostgreSQL: 127.0.0.1:5432
-- Redis: 127.0.0.1:6379
+- One shared physical-cash pool per outlet
+- Separate bKash, Nagad and Rocket e-money balances
+- 18 synthetic outlets across six areas
+- 21 days of hourly history
+- Chronological 70/15/15 train-validation-test split
+- Ground truth for six-hour shortage risk, anomaly category and provider-feed quality
+- Seasonal-naive, moving-average and EWMA forecasting baselines
+- MAE, RMSE and zero-safe MAPE
+- Shortage precision, recall, F1 and warning lead time
+- Anomaly precision, recall, F1 and false-positive rate
+- Data-quality detection and explanation/safe-language coverage
 
-OpenAI remains disabled in this phase. It will be added only after the multilingual golden dataset and evaluation harness are ready.
+## Runtime
+
+- Frontend: `http://127.0.0.1:8080`
+- API: `http://127.0.0.1:8000`
+- API docs: `http://127.0.0.1:8000/docs`
+- Evaluation report: `GET /api/v1/evaluation/report`
+- Dataset summary: `GET /api/v1/evaluation/dataset`
+
+## Reproduce the benchmark
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m app.evaluation.cli --project-root .. --agents 18 --days 21 --seed 20260711
+```
+
+OpenAI remains outside the core decision path. Phase 3 metrics apply to synthetic data only; anomalies are review signals and never fraud conclusions.

@@ -1,12 +1,12 @@
 import {
-  Activity, AlertTriangle, CheckCircle2, Clock3, Database,
-  Play, RefreshCw, ShieldCheck, TriangleAlert, WalletCards, XCircle,
+  Activity, AlertTriangle, BarChart3, CheckCircle2, Clock3, Database,
+  FlaskConical, Play, RefreshCw, ShieldCheck, TriangleAlert, WalletCards, XCircle,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
-  acknowledge, assign, escalate, getAlert, getAnalysis, getDashboard,
+  acknowledge, assign, escalate, getAlert, getAnalysis, getDashboard, getEvaluation,
   listAlerts, resolve, startAnalysis, startReview, subscribe,
-  type Alert, type AnalysisEvent, type AnalysisResult, type Dashboard,
+  type Alert, type AnalysisEvent, type AnalysisResult, type Dashboard, type EvaluationReport,
 } from "./api";
 
 type Language = "en" | "bn" | "banglish";
@@ -25,6 +25,7 @@ function EventIcon({ event }: { event: AnalysisEvent }) {
 
 export default function App() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [evaluation, setEvaluation] = useState<EvaluationReport | null>(null);
   const [events, setEvents] = useState<AnalysisEvent[]>([]);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -37,9 +38,10 @@ export default function App() {
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   async function refresh() {
-    const [dash, allAlerts] = await Promise.all([getDashboard(), listAlerts()]);
+    const [dash, allAlerts, report] = await Promise.all([getDashboard(), listAlerts(), getEvaluation()]);
     setDashboard(dash);
     setAlerts(allAlerts);
+    setEvaluation(report);
     if (selected) {
       const updated = allAlerts.find(item => item.alert_id === selected.alert_id);
       if (updated) setSelected(updated);
@@ -140,6 +142,21 @@ export default function App() {
           <p className="mt-5 text-sm text-slate-400">{item.label}</p><p className="mt-1 text-2xl font-bold">{money(item.balance)}</p><p className="mt-3 text-xs text-slate-500">Safe threshold {money(item.safe_threshold)}</p>
         </article>)}
       </section>
+
+      {evaluation && <section className="mt-6 panel border-violet-400/20">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div><div className="flex items-center gap-2 text-sm font-medium text-violet-300"><FlaskConical className="h-4 w-4" />Measured synthetic-data validation</div><h2 className="mt-2 text-xl font-semibold">Phase 3 evaluation evidence</h2><p className="mt-1 text-sm text-slate-400">Time-ordered train/validation/test split · seed {evaluation.seed}</p></div>
+          <div className="pill"><BarChart3 className="mr-2 inline h-4 w-4" />{evaluation.champion_forecast_model}</div>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="metric"><small>Forecast MAE</small><strong>{money(evaluation.forecast_candidates.find(item => item.model === evaluation.champion_forecast_model)?.mae_bdt ?? 0)}</strong></div>
+          <div className="metric"><small>Forecast MAPE</small><strong>{evaluation.forecast_candidates.find(item => item.model === evaluation.champion_forecast_model)?.mape_percent ?? 0}%</strong></div>
+          <div className="metric"><small>Anomaly F1</small><strong>{Math.round(evaluation.anomaly_detection.f1 * 100)}%</strong></div>
+          <div className="metric"><small>Shortage recall</small><strong>{Math.round(evaluation.shortage_detection.recall * 100)}%</strong></div>
+          <div className="metric"><small>Mean lead time</small><strong>{Math.round(evaluation.shortage_detection.mean_lead_time_minutes)} min</strong></div>
+        </div>
+        <p className="mt-4 text-xs text-slate-500">Synthetic benchmark only. Unusual activity requires human review and is not a fraud conclusion.</p>
+      </section>}
 
       <section className="mt-6 grid gap-6 xl:grid-cols-2">
         <article className="panel">

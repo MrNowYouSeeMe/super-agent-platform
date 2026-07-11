@@ -33,15 +33,19 @@ services:
     restart: unless-stopped
 
   backend:
-    image: superagent-sentinel-backend:phase2
+    image: superagent-sentinel-backend:phase3
     build:
       context: ./backend
     environment:
       APP_ENV: production
+      PROJECT_ROOT: /app
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-superagent}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-superagent}
       REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: http://localhost:${FRONTEND_HOST_PORT:-8080},http://127.0.0.1:${FRONTEND_HOST_PORT:-8080}
       ANALYSIS_STAGE_DELAY_MS: "100"
+    volumes:
+      - ./data:/app/data:ro
+      - ./artifacts:/app/artifacts:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,7 +54,7 @@ services:
     ports:
       - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import json,urllib.request; d=json.load(urllib.request.urlopen('http://127.0.0.1:8000/health')); assert d['status']=='ok' and d['version']=='0.2.0'"]
+      test: ["CMD", "python", "-c", "import json,urllib.request; d=json.load(urllib.request.urlopen('http://127.0.0.1:8000/health')); assert d['status']=='ok' and d['version']=='0.3.0'"]
       interval: 3s
       timeout: 5s
       retries: 40
@@ -58,10 +62,11 @@ services:
     restart: unless-stopped
 
   worker:
-    image: superagent-sentinel-backend:phase2
+    image: superagent-sentinel-backend:phase3
     command: ["python", "-m", "app.worker"]
     environment:
       APP_ENV: production
+      PROJECT_ROOT: /app
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-superagent}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-superagent}
       REDIS_URL: redis://redis:6379/0
       ANALYSIS_STAGE_DELAY_MS: "100"
@@ -73,7 +78,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: superagent-sentinel-frontend:phase2
+    image: superagent-sentinel-frontend:phase3
     build:
       context: ./frontend
     depends_on:

@@ -1,0 +1,78 @@
+{
+  "report_version": "phase3-evaluation-v1",
+  "generated_at": "2026-07-11T06:47:11.182377+00:00",
+  "dataset_version": "phase3-synthetic-v1",
+  "seed": 20260711,
+  "split_strategy": "time_ordered_70_train_15_validation_15_test",
+  "champion_forecast_model": "moving_average_6h",
+  "forecast_candidates": [
+    {
+      "model": "seasonal_naive_24h",
+      "mae_bdt": 8496.79,
+      "rmse_bdt": 29145.75,
+      "mape_percent": 10.08,
+      "evaluated_rows": 1350
+    },
+    {
+      "model": "moving_average_6h",
+      "mae_bdt": 8480.81,
+      "rmse_bdt": 29136.73,
+      "mape_percent": 10.01,
+      "evaluated_rows": 1350
+    },
+    {
+      "model": "ewma_net_change",
+      "mae_bdt": 8482.95,
+      "rmse_bdt": 29144.0,
+      "mape_percent": 10.02,
+      "evaluated_rows": 1350
+    }
+  ],
+  "shortage_detection": {
+    "precision": 0.9185,
+    "recall": 0.7613,
+    "f1": 0.8325,
+    "false_positive_rate": 0.0325,
+    "true_positive": 338,
+    "false_positive": 30,
+    "true_negative": 894,
+    "false_negative": 106,
+    "mean_lead_time_minutes": 64.26,
+    "median_lead_time_minutes": 60.0
+  },
+  "anomaly_detection": {
+    "precision": 0.8339,
+    "recall": 1.0,
+    "f1": 0.9094,
+    "false_positive_rate": 0.0138,
+    "true_positive": 266,
+    "false_positive": 53,
+    "true_negative": 3785,
+    "false_negative": 0
+  },
+  "data_quality_detection": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "false_positive_rate": 0.0,
+    "true_positive": 33,
+    "false_positive": 0,
+    "true_negative": 4071,
+    "false_negative": 0
+  },
+  "explanation_coverage": 1.0,
+  "safe_language_coverage": 1.0,
+  "evaluation_runtime_ms": 145.88,
+  "measured_metrics_count": 16,
+  "notes": [
+    "Champion selection uses lowest test-set MAE among deterministic baselines.",
+    "Shortage prediction is a six-hour early-warning baseline, not an automated action.",
+    "Anomaly scores indicate unusual behaviour requiring review; they are not fraud conclusions.",
+    "Data-quality failures independently reduce trust in downstream decisions."
+  ],
+  "limitations": [
+    "Results measure performance on reproducible synthetic data only.",
+    "Injected anomalies are simplified and may overstate real-world separability.",
+    "No real provider API, customer identity, settlement or regulatory claim is made."
+  ]
+}

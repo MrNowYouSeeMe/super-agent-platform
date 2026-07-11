@@ -59,6 +59,42 @@ const DashboardSchema = z.object({
   })),
 });
 
+
+const ForecastMetricSchema = z.object({
+  model: z.string(),
+  mae_bdt: z.number(),
+  rmse_bdt: z.number(),
+  mape_percent: z.number(),
+  evaluated_rows: z.number(),
+});
+
+const ClassificationMetricSchema = z.object({
+  precision: z.number(), recall: z.number(), f1: z.number(), false_positive_rate: z.number(),
+  true_positive: z.number(), false_positive: z.number(), true_negative: z.number(), false_negative: z.number(),
+});
+
+const EvaluationReportSchema = z.object({
+  report_version: z.string(),
+  generated_at: z.string(),
+  dataset_version: z.string(),
+  seed: z.number(),
+  split_strategy: z.string(),
+  champion_forecast_model: z.string(),
+  forecast_candidates: z.array(ForecastMetricSchema),
+  shortage_detection: ClassificationMetricSchema.extend({
+    mean_lead_time_minutes: z.number(),
+    median_lead_time_minutes: z.number(),
+  }),
+  anomaly_detection: ClassificationMetricSchema,
+  data_quality_detection: ClassificationMetricSchema,
+  explanation_coverage: z.number(),
+  safe_language_coverage: z.number(),
+  evaluation_runtime_ms: z.number(),
+  measured_metrics_count: z.number(),
+  notes: z.array(z.string()),
+  limitations: z.array(z.string()),
+});
+
 const CaseEventSchema = z.object({
   event_id: z.number(),
   action: z.string(),
@@ -96,6 +132,7 @@ export type AnalysisEvent = z.infer<typeof EventSchema>;
 export type AnalysisResult = z.infer<typeof ResultSchema>;
 export type Dashboard = z.infer<typeof DashboardSchema>;
 export type Alert = z.infer<typeof AlertSchema>;
+export type EvaluationReport = z.infer<typeof EvaluationReportSchema>;
 
 async function request<T>(path: string, schema: z.ZodType<T>, options: RequestInit = {}): Promise<T> {
   const controller = new AbortController();
@@ -121,6 +158,7 @@ async function request<T>(path: string, schema: z.ZodType<T>, options: RequestIn
 }
 
 export const getDashboard = () => request("/api/v1/dashboard", DashboardSchema);
+export const getEvaluation = () => request("/api/v1/evaluation/report", EvaluationReportSchema);
 export const listAlerts = () => request("/api/v1/alerts", z.array(AlertSchema));
 export const getAlert = (id: string) => request(`/api/v1/alerts/${id}`, AlertSchema);
 export const getAnalysis = (id: string) => request(`/api/v1/analyses/${id}`, SnapshotSchema);
