@@ -20,3 +20,7 @@ _backup/
 Thumbs.db
 postgres-data/
 redis-data/
+_test-reports/
+.scannerwork/
+backend/coverage.xml
+.sonar-local-token
