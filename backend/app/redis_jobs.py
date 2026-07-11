@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 
@@ -73,10 +74,19 @@ class RedisJobStore:
 
         return analysis_id
 
-    async def pop_job(self, timeout: int = 5) -> str | None:
-        item = await self.redis.brpop(settings.analysis_queue, timeout=timeout)
+    async def pop_job(self, timeout: float = 5) -> str | None:
+        try:
+            async with asyncio.timeout(timeout):
+                item = await self.redis.brpop(
+                    settings.analysis_queue,
+                    timeout=0,
+                )
+        except TimeoutError:
+            return None
+
         if item is None:
             return None
+
         return item[1]
 
     async def get_payload(self, analysis_id: str) -> AnalysisRequest | None:

@@ -11,13 +11,27 @@ import {
 
 type Language = "en" | "bn" | "banglish";
 type Scenario = "liquidity_anomaly" | "normal_day" | "data_conflict";
+type EventIconProps = Readonly<{ event: AnalysisEvent }>;
 
 const money = (value: number) => new Intl.NumberFormat("en-BD", {
   style: "currency", currency: "BDT", maximumFractionDigits: 0,
 }).format(value);
 const readable = (value: string) => value.replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+const appendUniqueEvent = (
+  current: AnalysisEvent[],
+  event: AnalysisEvent,
+): AnalysisEvent[] => (
+  current.some(existing => existing.sequence === event.sequence)
+    ? current
+    : [...current, event]
+);
 
-function EventIcon({ event }: { event: AnalysisEvent }) {
+const errorMessage = (error: unknown, fallback: string): string => (
+  error instanceof Error ? error.message : fallback
+);
+
+
+function EventIcon({ event }: EventIconProps) {
   if (event.status === "warning") return <TriangleAlert className="h-5 w-5 text-amber-300" />;
   if (event.status === "failed") return <XCircle className="h-5 w-5 text-rose-300" />;
   return <CheckCircle2 className="h-5 w-5 text-emerald-300" />;
@@ -70,25 +84,52 @@ export default function App() {
     throw new Error("Analysis timed out.");
   }
 
+  function stopAnalysisWithError(
+    errorValue: unknown,
+    fallback = "Analysis failed safely.",
+  ) {
+    setError(errorMessage(errorValue, fallback));
+    setRunning(false);
+  }
+
+  function beginPolling(analysisId: string) {
+    void poll(analysisId).catch(errorValue => {
+      stopAnalysisWithError(errorValue);
+    });
+  }
+
   async function run() {
-    setError(null); setEvents([]); setResult(null); setRunning(true);
+    setError(null);
+    setEvents([]);
+    setResult(null);
+    setRunning(true);
+
     try {
       const accepted = await startAnalysis(language, scenario);
+      const analysisId = accepted.analysis_id;
+
       unsubscribeRef.current?.();
+
+      const handleEvent = (event: AnalysisEvent) => {
+        setEvents(current => appendUniqueEvent(current, event));
+
+        if (event.stage === "analysis_completed") {
+          unsubscribeRef.current?.();
+          beginPolling(analysisId);
+        }
+      };
+
+      const handleStreamFailure = () => {
+        beginPolling(analysisId);
+      };
+
       unsubscribeRef.current = subscribe(
-        accepted.analysis_id,
-        event => {
-          setEvents(current => current.some(x => x.sequence === event.sequence) ? current : [...current, event]);
-          if (event.stage === "analysis_completed") {
-            unsubscribeRef.current?.();
-            void poll(accepted.analysis_id).catch(err => { setError(err.message); setRunning(false); });
-          }
-        },
-        () => void poll(accepted.analysis_id).catch(err => { setError(err.message); setRunning(false); }),
+        analysisId,
+        handleEvent,
+        handleStreamFailure,
       );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Analysis failed.");
-      setRunning(false);
+    } catch (errorValue) {
+      stopAnalysisWithError(errorValue, "Analysis failed.");
     }
   }
 

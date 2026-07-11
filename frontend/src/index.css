@@ -9,9 +9,9 @@ button, select { font: inherit; }
 .primary:disabled { opacity: .55; cursor: not-allowed; }
 .icon { border: 1px solid rgb(51 65 85); border-radius: .75rem; padding: .65rem; background: rgb(15 23 42); cursor: pointer; }
 .pill { border: 1px solid rgb(34 211 238 / .25); background: rgb(34 211 238 / .08); color: rgb(165 243 252); border-radius: 999px; padding: .3rem .65rem; font-size: .72rem; font-weight: 700; }
-.empty { border: 1px dashed rgb(51 65 85); border-radius: .75rem; padding: 1.5rem; text-align: center; color: rgb(100 116 139); }
+.empty { border: 1px dashed rgb(51 65 85); border-radius: .75rem; padding: 1.5rem; text-align: center; color: rgb(148 163 184); }
 .alert-row { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; text-align: left; border: 1px solid rgb(30 41 59); background: rgb(2 6 23 / .55); border-radius: .75rem; padding: 1rem; color: inherit; cursor: pointer; }
 .alert-row.selected { border-color: rgb(34 211 238 / .65); }
 .metric { background: rgb(2 6 23 / .6); border-radius: .75rem; padding: 1rem; }
-.metric small { display: block; color: rgb(100 116 139); text-transform: uppercase; letter-spacing: .05em; }
+.metric small { display: block; color: rgb(148 163 184); text-transform: uppercase; letter-spacing: .05em; }
 .metric strong { display: block; margin-top: .3rem; }

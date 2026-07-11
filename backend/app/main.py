@@ -2,7 +2,9 @@ import asyncio
 import json
 import logging
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,6 +53,18 @@ from app.workflow import WorkflowError
 configure_logging()
 logger = logging.getLogger("superagent.api")
 settings = get_settings()
+ANALYSIS_NOT_FOUND_RESPONSES = {
+    404: {"description": "Analysis was not found."},
+}
+ALERT_NOT_FOUND_RESPONSES = {
+    404: {"description": "Alert was not found."},
+}
+TRANSITION_RESPONSES = {
+    404: {"description": "Alert was not found."},
+    409: {"description": "The alert version is stale."},
+    422: {"description": "The workflow transition is invalid."},
+}
+
 configure_tracing(
     service_name=settings.otel_service_name,
     service_version="0.3.0",
@@ -99,7 +113,7 @@ def jobs(request: Request) -> RedisJobStore:
     return request.app.state.jobs
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health")
 async def health(request: Request) -> HealthResponse:
     postgres_status = "ok"
     redis_status = "ok"
@@ -126,9 +140,9 @@ async def health(request: Request) -> HealthResponse:
     )
 
 
-@app.get("/api/v1/dashboard", response_model=DashboardResponse)
+@app.get("/api/v1/dashboard")
 async def dashboard(
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> DashboardResponse:
     active_alerts, reviewing = await dashboard_counts(session)
     return DashboardResponse(
@@ -176,13 +190,12 @@ async def dashboard(
 
 @app.post(
     "/api/v1/analyses",
-    response_model=AnalysisAccepted,
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def create_analysis(
     payload: AnalysisRequest,
     request: Request,
-    store: RedisJobStore = Depends(jobs),
+    store: Annotated[RedisJobStore, Depends(jobs)],
 ) -> AnalysisAccepted:
     analysis_id = await store.create_and_enqueue(
         payload,
@@ -191,10 +204,13 @@ async def create_analysis(
     return AnalysisAccepted(analysis_id=analysis_id, status=JobStatus.queued)
 
 
-@app.get("/api/v1/analyses/{analysis_id}", response_model=AnalysisSnapshot)
+@app.get(
+    "/api/v1/analyses/{analysis_id}",
+    responses=ANALYSIS_NOT_FOUND_RESPONSES,
+)
 async def get_analysis(
     analysis_id: str,
-    store: RedisJobStore = Depends(jobs),
+    store: Annotated[RedisJobStore, Depends(jobs)],
 ) -> AnalysisSnapshot:
     snapshot = await store.get_snapshot(analysis_id)
     if snapshot is None:
@@ -202,37 +218,103 @@ async def get_analysis(
     return snapshot
 
 
-@app.get("/api/v1/analyses/{analysis_id}/events")
+def _stream_is_complete(
+    snapshot: AnalysisSnapshot,
+    emitted: int,
+) -> bool:
+    return (
+        snapshot.status in {JobStatus.completed, JobStatus.failed}
+        and emitted >= len(snapshot.events)
+    )
+
+
+async def _analysis_event_stream(
+    analysis_id: str,
+    request: Request,
+    store: RedisJobStore,
+) -> AsyncIterator[str]:
+    emitted = 0
+
+    while not await request.is_disconnected():
+        snapshot = await store.get_snapshot(analysis_id)
+
+        if snapshot is None:
+            return
+
+        for event in snapshot.events[emitted:]:
+            yield (
+                "data: "
+                + json.dumps(
+                    event.model_dump(mode="json"),
+                    ensure_ascii=False,
+                )
+                + "\n\n"
+            )
+            emitted += 1
+
+        if _stream_is_complete(snapshot, emitted):
+            return
+
+        await asyncio.sleep(0.2)
+
+
+def _stream_is_complete(
+    snapshot: AnalysisSnapshot,
+    emitted: int,
+) -> bool:
+    return (
+        snapshot.status in {JobStatus.completed, JobStatus.failed}
+        and emitted >= len(snapshot.events)
+    )
+
+
+async def _analysis_event_stream(
+    analysis_id: str,
+    request: Request,
+    store: RedisJobStore,
+) -> AsyncIterator[str]:
+    emitted = 0
+
+    while not await request.is_disconnected():
+        snapshot = await store.get_snapshot(analysis_id)
+
+        if snapshot is None:
+            return
+
+        for event in snapshot.events[emitted:]:
+            yield (
+                "data: "
+                + json.dumps(
+                    event.model_dump(mode="json"),
+                    ensure_ascii=False,
+                )
+                + "\n\n"
+            )
+            emitted += 1
+
+        if _stream_is_complete(snapshot, emitted):
+            return
+
+        await asyncio.sleep(0.2)
+
+
+@app.get(
+    "/api/v1/analyses/{analysis_id}/events",
+    responses=ANALYSIS_NOT_FOUND_RESPONSES,
+)
 async def stream_events(
     analysis_id: str,
     request: Request,
-    store: RedisJobStore = Depends(jobs),
+    store: Annotated[RedisJobStore, Depends(jobs)],
 ) -> StreamingResponse:
     if await store.get_snapshot(analysis_id) is None:
-        raise HTTPException(status_code=404, detail="Analysis was not found.")
-
-    async def generator():
-        emitted = 0
-        while True:
-            if await request.is_disconnected():
-                break
-            snapshot = await store.get_snapshot(analysis_id)
-            if snapshot is None:
-                break
-            for event in snapshot.events[emitted:]:
-                yield "data: " + json.dumps(
-                    event.model_dump(mode="json"), ensure_ascii=False
-                ) + "\n\n"
-                emitted += 1
-            if (
-                snapshot.status in {JobStatus.completed, JobStatus.failed}
-                and emitted >= len(snapshot.events)
-            ):
-                break
-            await asyncio.sleep(0.2)
+        raise HTTPException(
+            status_code=404,
+            detail="Analysis was not found.",
+        )
 
     return StreamingResponse(
-        generator(),
+        _analysis_event_stream(analysis_id, request, store),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache, no-transform",
@@ -242,18 +324,21 @@ async def stream_events(
     )
 
 
-@app.get("/api/v1/alerts", response_model=list[AlertResponse])
+@app.get("/api/v1/alerts")
 async def alerts(
-    alert_status: AlertStatus | None = Query(default=None, alias="status"),
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
+    alert_status: Annotated[AlertStatus | None, Query(alias="status")] = None,
 ) -> list[AlertResponse]:
     return await list_alerts(session, alert_status)
 
 
-@app.get("/api/v1/alerts/{alert_id}", response_model=AlertResponse)
+@app.get(
+    "/api/v1/alerts/{alert_id}",
+    responses=ALERT_NOT_FOUND_RESPONSES,
+)
 async def alert_detail(
     alert_id: str,
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AlertResponse:
     try:
         return await get_alert(session, alert_id)
@@ -291,11 +376,14 @@ async def apply_transition(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@app.post("/api/v1/alerts/{alert_id}/assign", response_model=AlertResponse)
+@app.post(
+    "/api/v1/alerts/{alert_id}/assign",
+    responses=TRANSITION_RESPONSES,
+)
 async def assign_alert(
     alert_id: str,
     command: AssignCommand,
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AlertResponse:
     return await apply_transition(
         session=session,
@@ -309,11 +397,14 @@ async def assign_alert(
     )
 
 
-@app.post("/api/v1/alerts/{alert_id}/acknowledge", response_model=AlertResponse)
+@app.post(
+    "/api/v1/alerts/{alert_id}/acknowledge",
+    responses=TRANSITION_RESPONSES,
+)
 async def acknowledge_alert(
     alert_id: str,
     command: TransitionCommand,
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AlertResponse:
     return await apply_transition(
         session=session,
@@ -326,11 +417,14 @@ async def acknowledge_alert(
     )
 
 
-@app.post("/api/v1/alerts/{alert_id}/start-review", response_model=AlertResponse)
+@app.post(
+    "/api/v1/alerts/{alert_id}/start-review",
+    responses=TRANSITION_RESPONSES,
+)
 async def start_review(
     alert_id: str,
     command: TransitionCommand,
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AlertResponse:
     return await apply_transition(
         session=session,
@@ -343,11 +437,14 @@ async def start_review(
     )
 
 
-@app.post("/api/v1/alerts/{alert_id}/escalate", response_model=AlertResponse)
+@app.post(
+    "/api/v1/alerts/{alert_id}/escalate",
+    responses=TRANSITION_RESPONSES,
+)
 async def escalate_alert(
     alert_id: str,
     command: TransitionCommand,
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AlertResponse:
     return await apply_transition(
         session=session,
@@ -360,11 +457,14 @@ async def escalate_alert(
     )
 
 
-@app.post("/api/v1/alerts/{alert_id}/resolve", response_model=AlertResponse)
+@app.post(
+    "/api/v1/alerts/{alert_id}/resolve",
+    responses=TRANSITION_RESPONSES,
+)
 async def resolve_alert(
     alert_id: str,
     command: TransitionCommand,
-    session: AsyncSession = Depends(get_session),
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AlertResponse:
     return await apply_transition(
         session=session,
