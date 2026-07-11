@@ -1,6 +1,46 @@
 import { z } from "zod";
 
+const UserSchema = z.object({
+  username: z.string(),
+  display_name: z.string(),
+  role: z.enum([
+    "OUTLET_OPERATOR",
+    "AREA_MANAGER",
+    "CENTRAL_OPERATIONS",
+    "RISK_REVIEWER",
+    "ADMIN",
+  ]),
+  outlet_ids: z.array(z.string()),
+});
+
+const TokenSchema = z.object({
+  access_token: z.string(),
+  token_type: z.literal("bearer"),
+  expires_at: z.string(),
+  user: UserSchema,
+});
+
+export type AuthSession = z.infer<typeof TokenSchema>;
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
+const TOKEN_STORAGE_KEY = "superagent_sentinel_token";
+
+let authToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+
+export function setAuthToken(token: string) {
+  authToken = token;
+  window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+}
+
+export function clearAuthToken() {
+  authToken = null;
+  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
+
+export function getAuthToken() {
+  return authToken;
+}
 
 const EventSchema = z.object({
   sequence: z.number(),
@@ -199,3 +239,18 @@ export const acknowledge = (alert: Alert) => transition(alert.alert_id, "acknowl
 export const startReview = (alert: Alert) => transition(alert.alert_id, "start-review", alert);
 export const escalate = (alert: Alert) => transition(alert.alert_id, "escalate", alert);
 export const resolve = (alert: Alert) => transition(alert.alert_id, "resolve", alert);
+
+
+export async function login(username: string, password: string) {
+  const session = await request(
+    "/api/v1/auth/login",
+    TokenSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    },
+  );
+
+  setAuthToken(session.access_token);
+  return session;
+}

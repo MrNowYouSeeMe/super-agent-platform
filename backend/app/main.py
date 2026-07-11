@@ -1,3 +1,15 @@
+from app.security import (
+    AuthenticatedUser,
+    RequestBodyLimitMiddleware,
+    SecurityHeadersMiddleware,
+    TokenRequest,
+    TokenResponse,
+    UserRole,
+    authenticate_user,
+    create_access_token,
+    current_user,
+    require_roles,
+)
 import asyncio
 import json
 import logging
@@ -100,20 +112,52 @@ app = FastAPI(
 )
 app.include_router(evaluation_router)
 app.add_middleware(RequestContextMiddleware)
+
+app.add_middleware(
+    RequestBodyLimitMiddleware,
+    max_body_bytes=settings.max_request_body_bytes,
+)
+
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Accept", "Content-Type", "X-Request-ID"],
+    allow_headers=["Accept", "Authorization", "Content-Type", "X-Request-ID"],
     expose_headers=["X-Request-ID", "X-Trace-ID", "Server-Timing"],
 )
+
+app.add_middleware(
+    RequestBodyLimitMiddleware,
+    max_body_bytes=settings.max_request_body_bytes,
+)
+
+app.add_middleware(SecurityHeadersMiddleware)
 instrument_fastapi(app)
 
 
 def jobs(request: Request) -> RedisJobStore:
     return request.app.state.jobs
 
+
+
+@app.post("/api/v1/auth/login", response_model=TokenResponse)
+async def login(payload: TokenRequest) -> TokenResponse:
+    user = authenticate_user(payload.username, payload.password)
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password.",
+        )
+
+    token, expires_at = create_access_token(user)
+    return TokenResponse(
+        access_token=token,
+        expires_at=expires_at,
+        user=user,
+    )
 
 @app.get("/health")
 async def health(request: Request) -> HealthResponse:
@@ -439,3 +483,4 @@ async def resolve_alert(
         note=command.note,
         expected_version=command.expected_version,
     )
+

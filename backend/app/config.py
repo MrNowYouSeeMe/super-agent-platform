@@ -5,6 +5,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    jwt_secret_key: str = Field(
+        default="local-dev-only-change-this-superagent-sentinel-secret",
+        min_length=32,
+    )
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = Field(default=480, ge=5, le=1440)
+    max_request_body_bytes: int = Field(default=262_144, ge=1024, le=5_242_880)
     app_name: str = "SuperAgent Sentinel API"
     app_env: str = "development"
     debug: bool = False
@@ -53,3 +60,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
