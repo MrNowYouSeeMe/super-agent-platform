@@ -9,9 +9,9 @@ class Settings(BaseSettings):
     app_env: str = "development"
     debug: bool = False
 
-    database_url: str = (
-        "postgresql+asyncpg://superagent:superagent@127.0.0.1:5432/superagent"
-    )
+    # Credentials must come from DATABASE_URL/.env or the deployment secret store.
+    # This credential-free local default is intentionally non-production.
+    database_url: str = "postgresql+asyncpg://127.0.0.1:5432/superagent"
     redis_url: str = "redis://127.0.0.1:6379/0"
     analysis_queue: str = "superagent:analysis:queue"
     job_ttl_seconds: int = Field(default=86400, ge=300, le=604800)
