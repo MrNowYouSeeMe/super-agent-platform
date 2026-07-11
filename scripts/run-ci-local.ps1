@@ -12,6 +12,7 @@ Set-Location $Backend
     --cov-report=term-missing
 
 Set-Location $Frontend
+npm.cmd install --global npm@11.6.4
 npm.cmd ci
 npm.cmd run build
 npm.cmd audit --audit-level=high
