@@ -156,7 +156,7 @@ jobs:
           path: frontend/coverage
 
       - name: SonarQube scan and Quality Gate
-        uses: SonarSource/sonarqube-scan-action@v8.2.0
+        uses: SonarSource/sonarqube-scan-action@v8.2.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
